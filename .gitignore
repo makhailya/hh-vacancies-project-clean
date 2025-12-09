@@ -149,3 +149,6 @@ logs/
 # Local settings
 *.local
 *.dev
+
+.idea/
+
