@@ -1,35 +1,39 @@
-import psycopg2
-from database.db_manager import DBManager
-from database.init_tables import create_tables
+from unittest.mock import MagicMock, patch
+from src.db_manager import DBManager
 
 
-def setup_database():
-    conn = psycopg2.connect(dbname="hh_project", user="postgres", password="12345")
-    create_tables(conn)
-
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM vacancies;")
-        cur.execute("DELETE FROM companies;")
-
-        cur.execute("INSERT INTO companies (hh_id, name) VALUES (1, 'TestCo');")
-        cur.execute("""
-            INSERT INTO vacancies (company_id, name, salary_from, salary_to, url)
-            VALUES (1, 'Python Developer', 100000, 150000, 'https://example.com')
-        """)
-
-        conn.commit()
-    conn.close()
+def fake_cursor(rows):
+    m = MagicMock()
+    m.__enter__.return_value = m
+    m.fetchall.return_value = rows
+    return m
 
 
 def test_get_companies_and_vacancies_count():
-    setup_database()
-    db = DBManager("hh_project", "postgres", "12345")
-    result = db.get_companies_and_vacancies_count()
-    assert result[0][1] == 1
+    rows = [("Company A", 5), ("Company B", 3)]
+
+    with patch("psycopg2.connect") as mock_conn:
+        conn = MagicMock()
+        conn.cursor.return_value = fake_cursor(rows)
+        mock_conn.return_value = conn
+
+        db = DBManager()
+        result = db.get_companies_and_vacancies_count()
+
+        assert len(result) == 2
+        assert result[0] == ("Company A", 5)
 
 
 def test_get_vacancies_with_keyword():
-    setup_database()
-    db = DBManager("hh_project", "postgres", "12345")
-    result = db.get_vacancies_with_keyword("python")
-    assert len(result) == 1
+    rows = [("Company", "Python Dev", 100, "url")]
+
+    with patch("psycopg2.connect") as mock_conn:
+        conn = MagicMock()
+        conn.cursor.return_value = fake_cursor(rows)
+        mock_conn.return_value = conn
+
+        db = DBManager()
+        result = db.get_vacancies_with_keyword("python")
+
+        assert len(result) == 1
+        assert "Python" in result[0][1]
