@@ -150,5 +150,10 @@ logs/
 *.local
 *.dev
 
+# PyCharm
 .idea/
+
+# Python
+*.pyc
+
 
